@@ -1,0 +1,1007 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixzzle - Turn Any Photo Into a Puzzle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1200px;
+            width: 100%;
+            padding: 40px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .upload-box {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+            margin-bottom: 20px;
+        }
+
+        .upload-box:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        .upload-box.dragover {
+            border-color: #764ba2;
+            background: #e8e9ff;
+            transform: scale(1.02);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        select, button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select {
+            background: white;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .game-area {
+            display: none;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .pieces-container {
+            flex: 1;
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 500px;
+            border: 3px solid #667eea;
+        }
+
+        .pieces-container h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .pieces-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 400px;
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .pieces-area.drag-over {
+            background: #e8e9ff;
+            border: 2px dashed #667eea;
+        }
+
+        .puzzle-board-container {
+            flex: 1.5;
+        }
+
+        .puzzle-board {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            display: grid;
+            gap: 3px;
+            border: 3px solid #667eea;
+            aspect-ratio: 1;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .puzzle-piece {
+            cursor: grab;
+            border-radius: 5px;
+            transition: all 0.2s;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #667eea;
+            width: 100px;
+            height: 100px;
+            flex-shrink: 0;
+        }
+
+        .puzzle-piece:active {
+            cursor: grabbing;
+        }
+
+        .puzzle-piece:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.5);
+            z-index: 10;
+        }
+
+        .puzzle-piece.dragging {
+            opacity: 0.3;
+        }
+
+        .puzzle-slot {
+            border: 3px dashed #ccc;
+            border-radius: 5px;
+            background: #f8f9ff;
+            transition: all 0.2s;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .puzzle-slot.drag-over {
+            background: #d0d4ff;
+            border-color: #667eea;
+            border-style: solid;
+            transform: scale(1.05);
+        }
+
+        .puzzle-slot.filled {
+            border: 2px solid #667eea;
+            background: transparent;
+        }
+
+        .puzzle-slot.filled .puzzle-piece {
+            width: 100%;
+            height: 100%;
+            border: none;
+            cursor: grab;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .victory {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .victory-content {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            animation: popIn 0.5s;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .victory h2 {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧩 Pixzzle</h1>
+            <p>Turn any photo into a fun jigsaw puzzle!</p>
+        </div>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-box" id="uploadBox">
+                <div class="upload-icon">📸</div>
+                <h3>Click or drag an image here</h3>
+                <p>Support for JPG, PNG, GIF, WebP</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="difficulty">Difficulty:</label>
+                <select id="difficulty">
+                    <option value="3">Easy (3×3)</option>
+                    <option value="4" selected>Medium (4×4)</option>
+                    <option value="5">Hard (5×5)</option>
+                    <option value="6">Expert (6×6)</option>
+                </select>
+            </div>
+            <button id="startBtn" disabled>Start Puzzle</button>
+            <button id="newGameBtn" style="display: none;">New Puzzle</button>
+        </div>
+
+        <div id="arduinoSection" style="display: none; margin: 20px 0; padding: 30px; background: linear-gradient(135deg, #f8f9ff 0%, #e8e9ff 100%); border-radius: 15px; border: 3px solid #667eea; box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);">
+            <h3 style="color: #667eea; margin-bottom: 20px; font-size: 1.5em; text-align: center;">🔌 Send Image to Arduino</h3>
+            
+            <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Display Size:</label>
+                        <select id="imageSize" style="width: 100%; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1em;">
+                            <option value="128">128x128 (OLED/TFT)</option>
+                            <option value="84">84x84 (Nokia 5110)</option>
+                            <option value="64">64x64 (Small OLED)</option>
+                            <option value="32">32x32 (LED Matrix)</option>
+                            <option value="16">16x16 (Tiny Matrix)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Baud Rate:</label>
+                        <select id="baudRate" style="width: 100%; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1em;">
+                            <option value="9600">9600</option>
+                            <option value="19200">19200</option>
+                            <option value="38400">38400</option>
+                            <option value="57600">57600</option>
+                            <option value="115200" selected>115200</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; background: #f8f9ff; border-radius: 8px; border: 2px solid #667eea;">
+                        <input type="checkbox" id="grayscaleCheck" checked style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
+                        <span style="font-weight: 600; color: #333;">Convert to Grayscale (recommended for most displays)</span>
+                    </label>
+                </div>
+
+                <div id="connectionStatus" style="padding: 15px; background: #f0f1ff; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 600; color: #666;">
+                    ⚠️ Not connected to Arduino
+                </div>
+
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="connectBtn" onclick="connectSerial()" style="padding: 15px 30px; font-size: 1.1em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); flex: 1; max-width: 300px;">
+                        🔌 Connect to Arduino
+                    </button>
+                    <button id="sendBtn" onclick="sendToArduino()" disabled style="padding: 15px 30px; font-size: 1.1em; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); flex: 1; max-width: 300px;">
+                        📤 Send Image
+                    </button>
+                </div>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 10px;">
+                <h4 style="color: #667eea; margin-bottom: 10px;">📟 Serial Monitor:</h4>
+                <div id="serialStatus" style="padding: 15px; background: #1e1e1e; color: #00ff00; border-radius: 8px; min-height: 150px; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9em; white-space: pre-wrap;"></div>
+                <button onclick="clearSerialMonitor()" style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">Clear Monitor</button>
+            </div>
+
+            <div style="background: #fffbea; padding: 15px; border-radius: 10px; margin-top: 20px; border-left: 4px solid #ffa500;">
+                <h4 style="color: #d97706; margin-bottom: 10px;">💡 Arduino Setup Guide:</h4>
+                <ol style="margin-left: 20px; color: #666; line-height: 1.8;">
+                    <li>Upload this sketch to your Arduino (see example below)</li>
+                    <li>Connect your display to Arduino (OLED/TFT/Nokia 5110)</li>
+                    <li>Click "Connect to Arduino" and select your port</li>
+                    <li>Click "Send Image" to transfer</li>
+                    <li>Image will display automatically!</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="game-area" id="gameArea">
+            <div class="pieces-container">
+                <h3>🧩 Puzzle Pieces</h3>
+                <div class="pieces-area" id="piecesArea"></div>
+            </div>
+            <div class="puzzle-board-container">
+                <div class="puzzle-board" id="puzzleBoard"></div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="moves">0</div>
+                        <div class="stat-label">Moves</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="timer">00:00</div>
+                        <div class="stat-label">Time</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="progress">0%</div>
+                        <div class="stat-label">Progress</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="victory" id="victory">
+        <div class="victory-content">
+            <h2>🎉 Puzzle Complete!</h2>
+            <p style="font-size: 1.5em; margin: 20px 0;">
+                Time: <span id="finalTime"></span><br>
+                Moves: <span id="finalMoves"></span>
+            </p>
+            <button onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        let uploadedImage = null;
+        let gridSize = 4;
+        let pieces = [];
+        let moves = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let placedPieces = 0;
+        let draggedElement = null;
+        let draggedFromSlot = null;
+
+        // Arduino serial variables
+        let serialPort = null;
+        let writer = null;
+        let reader = null;
+
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+        const startBtn = document.getElementById('startBtn');
+        const sendArduinoBtn = document.getElementById('sendArduinoBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const uploadSection = document.getElementById('uploadSection');
+        const gameArea = document.getElementById('gameArea');
+        const difficulty = document.getElementById('difficulty');
+
+        // Upload handling
+        uploadBox.addEventListener('click', () => fileInput.click());
+        
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.classList.add('dragover');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                loadImage(file);
+            }
+        });
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImage = e.target.result;
+                uploadBox.innerHTML = `
+                    <img src="${uploadedImage}" style="max-width: 100%; max-height: 200px; border-radius: 10px;">
+                    <p style="margin-top: 10px;">Image loaded! Click "Start Puzzle" or send to Arduino.</p>
+                `;
+                startBtn.disabled = false;
+                document.getElementById('arduinoSection').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        difficulty.addEventListener('change', (e) => {
+            gridSize = parseInt(e.target.value);
+        });
+
+        startBtn.addEventListener('click', startPuzzle);
+        newGameBtn.addEventListener('click', () => location.reload());
+
+        function startPuzzle() {
+            uploadSection.style.display = 'none';
+            gameArea.style.display = 'flex';
+            startBtn.style.display = 'none';
+            newGameBtn.style.display = 'block';
+            
+            gridSize = parseInt(difficulty.value);
+            createPuzzle();
+            startTimer();
+        }
+
+        function createPuzzle() {
+            const board = document.getElementById('puzzleBoard');
+            const piecesArea = document.getElementById('piecesArea');
+            
+            board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            board.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+            
+            board.innerHTML = '';
+            piecesArea.innerHTML = '';
+            pieces = [];
+            
+            const totalPieces = gridSize * gridSize;
+
+            piecesArea.addEventListener('dragover', handlePiecesAreaDragOver);
+            piecesArea.addEventListener('dragleave', handlePiecesAreaDragLeave);
+            piecesArea.addEventListener('drop', handlePiecesAreaDrop);
+
+            for (let i = 0; i < totalPieces; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'puzzle-slot';
+                slot.dataset.position = i;
+                
+                slot.addEventListener('dragover', handleSlotDragOver);
+                slot.addEventListener('dragleave', handleSlotDragLeave);
+                slot.addEventListener('drop', handleSlotDrop);
+                
+                board.appendChild(slot);
+            }
+
+            for (let i = 0; i < totalPieces; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'puzzle-piece';
+                piece.draggable = true;
+                piece.dataset.correctPosition = i;
+                
+                const row = Math.floor(i / gridSize);
+                const col = i % gridSize;
+                const percentX = (col / (gridSize - 1)) * 100;
+                const percentY = (row / (gridSize - 1)) * 100;
+                
+                piece.style.backgroundImage = `url(${uploadedImage})`;
+                piece.style.backgroundPosition = `${percentX}% ${percentY}%`;
+                piece.style.backgroundSize = `${gridSize * 100}%`;
+                
+                piece.addEventListener('dragstart', handlePieceDragStart);
+                piece.addEventListener('dragend', handlePieceDragEnd);
+                
+                pieces.push(piece);
+            }
+
+            shuffleArray(pieces);
+            pieces.forEach(piece => piecesArea.appendChild(piece));
+            
+            moves = 0;
+            placedPieces = 0;
+            updateStats();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function handlePieceDragStart(e) {
+            draggedElement = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.innerHTML);
+            
+            const parentSlot = e.target.closest('.puzzle-slot');
+            if (parentSlot) {
+                draggedFromSlot = parentSlot;
+            }
+        }
+
+        function handlePieceDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function handlePiecesAreaDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handlePiecesAreaDragLeave(e) {
+            if (e.target.id === 'piecesArea') {
+                e.currentTarget.classList.remove('drag-over');
+            }
+        }
+
+        function handlePiecesAreaDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const piecesArea = document.getElementById('piecesArea');
+            piecesArea.classList.remove('drag-over');
+            
+            if (draggedElement) {
+                if (draggedFromSlot) {
+                    draggedFromSlot.classList.remove('filled');
+                    
+                    if (draggedElement.style.opacity === '1' && 
+                        draggedElement.dataset.correctPosition === draggedFromSlot.dataset.position) {
+                        placedPieces--;
+                    }
+                    
+                    draggedFromSlot = null;
+                }
+                
+                draggedElement.style.opacity = '1';
+                draggedElement.style.width = '100px';
+                draggedElement.style.height = '100px';
+                draggedElement.draggable = true;
+                draggedElement.style.cursor = 'grab';
+                
+                piecesArea.appendChild(draggedElement);
+                
+                moves++;
+                updateStats();
+            }
+            
+            draggedElement = null;
+        }
+
+        function handleSlotDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            const slot = e.currentTarget;
+            if (!slot.classList.contains('filled')) {
+                slot.classList.add('drag-over');
+            }
+        }
+
+        function handleSlotDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleSlotDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const slot = e.currentTarget;
+            slot.classList.remove('drag-over');
+            
+            if (draggedElement && !slot.classList.contains('filled')) {
+                const pieceCorrectPosition = draggedElement.dataset.correctPosition;
+                const slotPosition = slot.dataset.position;
+                
+                if (draggedFromSlot) {
+                    draggedFromSlot.classList.remove('filled');
+                    
+                    if (draggedElement.style.opacity === '1' && 
+                        draggedElement.dataset.correctPosition === draggedFromSlot.dataset.position) {
+                        placedPieces--;
+                    }
+                    
+                    draggedFromSlot = null;
+                }
+                
+                slot.appendChild(draggedElement);
+                slot.classList.add('filled');
+                
+                draggedElement.style.width = '100%';
+                draggedElement.style.height = '100%';
+                draggedElement.draggable = true;
+                draggedElement.style.cursor = 'grab';
+                
+                moves++;
+                
+                if (pieceCorrectPosition === slotPosition) {
+                    placedPieces++;
+                    draggedElement.style.opacity = '1';
+                    
+                    if (placedPieces === gridSize * gridSize) {
+                        setTimeout(winGame, 300);
+                    }
+                } else {
+                    draggedElement.style.opacity = '0.6';
+                }
+                
+                updateStats();
+            }
+            
+            draggedElement = null;
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timer').textContent = 
+                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function updateStats() {
+            document.getElementById('moves').textContent = moves;
+            const progress = Math.round((placedPieces / (gridSize * gridSize)) * 100);
+            document.getElementById('progress').textContent = progress + '%';
+        }
+
+        function winGame() {
+            clearInterval(timerInterval);
+            document.getElementById('finalTime').textContent = 
+                document.getElementById('timer').textContent;
+            document.getElementById('finalMoves').textContent = moves;
+            document.getElementById('victory').style.display = 'flex';
+        }
+
+        // ===== ARDUINO TRANSFER FUNCTIONS =====
+
+        function logSerial(message, type = 'info') {
+            const statusDiv = document.getElementById('serialStatus');
+            const timestamp = new Date().toLocaleTimeString();
+            let prefix = '';
+            
+            switch(type) {
+                case 'success': prefix = '✅'; break;
+                case 'error': prefix = '❌'; break;
+                case 'warning': prefix = '⚠️'; break;
+                case 'info': prefix = 'ℹ️'; break;
+                case 'data': prefix = '📊'; break;
+                default: prefix = '•';
+            }
+            
+            statusDiv.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        }
+
+        function clearSerialMonitor() {
+            document.getElementById('serialStatus').textContent = '';
+            logSerial('Serial monitor cleared', 'info');
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusDiv = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            if (connected) {
+                statusDiv.style.background = '#d4edda';
+                statusDiv.style.color = '#155724';
+                statusDiv.innerHTML = '✅ Connected to Arduino';
+                connectBtn.textContent = '🔓 Disconnect';
+                connectBtn.onclick = disconnectSerial;
+                sendBtn.disabled = false;
+            } else {
+                statusDiv.style.background = '#f0f1ff';
+                statusDiv.style.color = '#666';
+                statusDiv.innerHTML = '⚠️ Not connected to Arduino';
+                connectBtn.textContent = '🔌 Connect to Arduino';
+                connectBtn.onclick = connectSerial;
+                sendBtn.disabled = true;
+            }
+        }
+
+        // Convert image to byte array for Arduino
+        function imageToByteArray(imageData, width, height, grayscale = true) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = width;
+            canvas.height = height;
+
+            const img = new Image();
+            return new Promise((resolve) => {
+                img.onload = () => {
+                    // Draw and resize image
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const imgData = ctx.getImageData(0, 0, width, height);
+                    const pixels = imgData.data;
+                    
+                    const byteArray = [];
+                    
+                    if (grayscale) {
+                        // Convert to grayscale (8-bit per pixel)
+                        for (let i = 0; i < pixels.length; i += 4) {
+                            const r = pixels[i];
+                            const g = pixels[i + 1];
+                            const b = pixels[i + 2];
+                            // Convert to grayscale using luminosity method
+                            const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                            byteArray.push(gray);
+                        }
+                    } else {
+                        // RGB565 format (16-bit color - 2 bytes per pixel)
+                        for (let i = 0; i < pixels.length; i += 4) {
+                            const r = pixels[i] >> 3;     // 5 bits red
+                            const g = pixels[i + 1] >> 2;  // 6 bits green
+                            const b = pixels[i + 2] >> 3;  // 5 bits blue
+                            
+                            const rgb565 = (r << 11) | (g << 5) | b;
+                            byteArray.push((rgb565 >> 8) & 0xFF); // High byte
+                            byteArray.push(rgb565 & 0xFF);         // Low byte
+                        }
+                    }
+                    
+                    resolve(byteArray);
+                };
+                img.src = uploadedImage;
+            });
+        }
+
+        // Connect to serial port
+        async function connectSerial() {
+            const baudRate = parseInt(document.getElementById('baudRate').value);
+            
+            if (!('serial' in navigator)) {
+                logSerial('Web Serial API not supported!', 'error');
+                logSerial('Please use Chrome, Edge, or Opera browser', 'warning');
+                alert('❌ Web Serial API not supported!\n\nPlease use:\n• Chrome\n• Edge\n• Opera\n\nOther browsers do not support direct serial communication.');
+                return;
+            }
+
+            try {
+                logSerial('Requesting serial port...', 'info');
+                
+                // Request a port from user
+                serialPort = await navigator.serial.requestPort();
+                
+                logSerial(`Opening port at ${baudRate} baud...`, 'info');
+                
+                // Open the port with selected baud rate
+                await serialPort.open({ 
+                    baudRate: baudRate,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none',
+                    flowControl: 'none'
+                });
+
+                writer = serialPort.writable.getWriter();
+                reader = serialPort.readable.getReader();
+
+                logSerial('Connection established!', 'success');
+                logSerial(`Baud rate: ${baudRate}`, 'data');
+                updateConnectionStatus(true);
+                
+                // Start reading responses from Arduino
+                readSerial();
+
+            } catch (error) {
+                logSerial(`Connection failed: ${error.message}`, 'error');
+                logSerial('Make sure Arduino is connected via USB', 'warning');
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Disconnect from serial port
+        async function disconnectSerial() {
+            try {
+                if (reader) {
+                    await reader.cancel();
+                    reader.releaseLock();
+                }
+                if (writer) {
+                    await writer.close();
+                    writer.releaseLock();
+                }
+                if (serialPort) {
+                    await serialPort.close();
+                }
+                
+                logSerial('Disconnected from Arduino', 'info');
+                updateConnectionStatus(false);
+                
+                serialPort = null;
+                writer = null;
+                reader = null;
+            } catch (error) {
+                logSerial(`Disconnect error: ${error.message}`, 'error');
+            }
+        }
+
+        // Read serial data from Arduino
+        async function readSerial() {
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        logSerial('Reader closed', 'warning');
+                        break;
+                    }
+                    
+                    const text = new TextDecoder().decode(value);
+                    // Display Arduino responses
+                    const statusDiv = document.getElementById('serialStatus');
+                    statusDiv.textContent += text;
+                    statusDiv.scrollTop = statusDiv.scrollHeight;
+                }
+            } catch (error) {
+                if (error.message !== 'The reader has been released.') {
+                    logSerial(`Read error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Send image to Arduino
+        async function sendToArduino() {
+            const size = parseInt(document.getElementById('imageSize').value);
+            const grayscale = document.getElementById('grayscaleCheck').checked;
+
+            if (!serialPort || !writer) {
+                logSerial('Not connected! Click "Connect to Arduino" first', 'error');
+                return;
+            }
+
+            logSerial('Processing image...', 'info');
+            logSerial(`Target size: ${size}x${size}`, 'data');
+            logSerial(`Format: ${grayscale ? 'Grayscale (8-bit)' : 'RGB565 (16-bit)'}`, 'data');
+
+            try {
+                const byteArray = await imageToByteArray(uploadedImage, size, size, grayscale);
+                
+                logSerial(`Image processed successfully!`, 'success');
+                logSerial(`Total bytes: ${byteArray.length}`, 'data');
+                logSerial('', 'info');
+                logSerial('Starting transfer...', 'info');
+                
+                // Send protocol header
+                const header = new Uint8Array([
+                    0xFF, 0xD8,              // Start marker (JPEG-like)
+                    size & 0xFF,              // Width (low byte)
+                    (size >> 8) & 0xFF,       // Width (high byte)
+                    size & 0xFF,              // Height (low byte)
+                    (size >> 8) & 0xFF,       // Height (high byte)
+                    grayscale ? 0x01 : 0x02   // Format: 1=grayscale, 2=RGB565
+                ]);
+                
+                await writer.write(header);
+                logSerial('Header sent', 'success');
+                
+                // Send image data in chunks
+                const chunkSize = 128; // Optimized chunk size
+                let sentBytes = 0;
+                
+                for (let i = 0; i < byteArray.length; i += chunkSize) {
+                    const chunk = byteArray.slice(i, Math.min(i + chunkSize, byteArray.length));
+                    await writer.write(new Uint8Array(chunk));
+                    
+                    sentBytes += chunk.length;
+                    const progress = Math.round((sentBytes / byteArray.length) * 100);
+                    
+                    if (progress % 20 === 0 || sentBytes === byteArray.length) {
+                        logSerial(`Progress: ${progress}% (${sentBytes}/${byteArray.length} bytes)`, 'data');
+                    }
+                    
+                    // Small delay to prevent buffer overflow
+                    await new Promise(resolve => setTimeout(resolve, 5));
+                }
+                
+                // Send end marker
+                const footer = new Uint8Array([0xFF, 0xD9]); // End marker
+                await writer.write(footer);
+                
+                logSerial('', 'info');
+                logSerial('Transfer complete! ✨', 'success');
+                logSerial('Arduino should display the image now', 'info');
+
+            } catch (error) {
+                logSerial(`Transfer failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
